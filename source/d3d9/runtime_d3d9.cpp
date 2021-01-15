@@ -87,6 +87,7 @@ reshade::d3d9::runtime_d3d9::runtime_d3d9(IDirect3DDevice9 *device, IDirect3DSwa
 		config.get("DEPTH", "DepthCopyBeforeClears", _state_tracking.preserve_depth_buffers);
 		config.get("DEPTH", "DepthCopyAtClearIndex", _state_tracking.depthstencil_clear_index);
 		config.get("DEPTH", "UseAspectRatioHeuristics", _state_tracking.use_aspect_ratio_heuristics);
+		config.get("DEPTH", "FocusOnBestOriginalDepthstencilSource", _state_tracking.focus_on_best_original_depthstencil_source);
 		config.get("DEPTH", "BruteForceFix", _state_tracking.brute_force_fix);
 
 		if (_state_tracking.depthstencil_clear_index == std::numeric_limits<UINT>::max())
@@ -97,6 +98,7 @@ reshade::d3d9::runtime_d3d9::runtime_d3d9(IDirect3DDevice9 *device, IDirect3DSwa
 		config.set("DEPTH", "DepthCopyBeforeClears", _state_tracking.preserve_depth_buffers);
 		config.set("DEPTH", "DepthCopyAtClearIndex", _state_tracking.depthstencil_clear_index);
 		config.set("DEPTH", "UseAspectRatioHeuristics", _state_tracking.use_aspect_ratio_heuristics);
+		config.get("DEPTH", "FocusOnBestOriginalDepthstencilSource", _state_tracking.focus_on_best_original_depthstencil_source);
 		config.set("DEPTH", "BruteForceFix", _state_tracking.brute_force_fix);
 
 	});
@@ -283,7 +285,7 @@ void reshade::d3d9::runtime_d3d9::on_present()
 		_state_tracking.reset(true);
 		_reset_buffer_detection = false;
 	}
-#endif
+
 
 	_device->EndScene();
 }
@@ -300,10 +302,10 @@ void reshade::d3d9::runtime_d3d9::on_draw_primitive(D3DPRIMITIVETYPE PrimitiveTy
 	}
 
 	// fix to display user weapon and cockpit in some games
-	if (_brute_force_fix &&
+	if (_state_tracking.brute_force_fix &&
 		depthstencil != _depthstencil_replacement &&
-		_is_good_viewport &&
-		_is_best_original_depthstencil_source &&
+		_state_tracking.is_good_viewport &&
+		_state_tracking.is_best_original_depthstencil_source &&
 		_depth_buffer_table.size() > _preserve_starting_index)
 	{
 		D3DVIEWPORT9 mViewport; // Holds viewport data
@@ -345,10 +347,10 @@ void reshade::d3d9::runtime_d3d9::on_draw_indexed_primitive(D3DPRIMITIVETYPE Pri
 	}
 
 	// fix to display user weapon and cockpit in some games
-	if (_brute_force_fix &&
+	if (_state_tracking.brute_force_fix &&
 		depthstencil != _depthstencil_replacement &&
-		_is_good_viewport &&
-		_is_best_original_depthstencil_source &&
+		_state_tracking.is_good_viewport &&
+		_state_tracking.is_best_original_depthstencil_source &&
 		_depth_buffer_table.size() > _preserve_starting_index)
 	{
 		D3DVIEWPORT9 mViewport; // Holds viewport data
@@ -428,17 +430,17 @@ void reshade::d3d9::runtime_d3d9::on_draw_call(com_ptr<IDirect3DSurface9> depths
 		}
 	}
 
-	if (_preserve_depth_buffer && _depthstencil_replacement != nullptr)
+	if (_state_tracking.preserve_depth_buffers && _depthstencil_replacement != nullptr)
 	{
 		// remove parasite items
-		if (!_is_good_viewport)
+		if (!_state_tracking.is_good_viewport)
 			return;
 
 		_current_db_vertices += vertices,
 		_current_db_drawcalls += 1;
 
 		// check that the drawcall is done on the good depthstencil (the one from which the depthstencil_replaceent was created)
-		if (!_is_best_original_depthstencil_source)
+		if (!_state_tracking.is_best_original_depthstencil_source)
 			return;
 
 		_device->SetDepthStencilSurface(depthstencil.get());
@@ -449,15 +451,16 @@ void reshade::d3d9::runtime_d3d9::on_draw_call(com_ptr<IDirect3DSurface9> depths
 }
 void reshade::d3d9::runtime_d3d9::on_set_depthstencil_surface(IDirect3DSurface9 *&depthstencil)
 {
-	_is_best_original_depthstencil_source = !_focus_on_best_original_depthstencil_source || (depthstencil == _depthstencil);
+	_state_tracking.is_best_original_depthstencil_source = !_state_tracking.focus_on_best_original_depthstencil_source || (depthstencil == _depthstencil);
 
 	// Keep track of all used depth stencil surfaces
 	if (_depth_source_table.find(depthstencil) == _depth_source_table.end())
 	{
 		D3DSURFACE_DESC desc;
 		depthstencil->GetDesc(&desc);
-		if (!check_depthstencil_size(desc)) // Ignore unlikely candidates
-			return;
+		//todo maybe later add it back
+		//if (!check_depthstencil_size(desc)) // Ignore unlikely candidates
+		//	return;
 
 		_depth_source_table.emplace(depthstencil, depth_source_info{ nullptr, desc.Width, desc.Height });
 	}
@@ -472,7 +475,7 @@ void reshade::d3d9::runtime_d3d9::on_get_depthstencil_surface(IDirect3DSurface9 
 }
 void reshade::d3d9::runtime_d3d9::on_clear_depthstencil_surface(IDirect3DSurface9 *depthstencil)
 {
-	if (!_preserve_depth_buffer || depthstencil != _depthstencil_replacement)
+	if (!_state_tracking.preserve_depth_buffers || depthstencil != _depthstencil_replacement)
 		return;
 
 	const unsigned int min_db_drawcalls = 1;
@@ -480,8 +483,8 @@ void reshade::d3d9::runtime_d3d9::on_clear_depthstencil_surface(IDirect3DSurface
 
 	D3DSURFACE_DESC desc;
 	depthstencil->GetDesc(&desc);
-	if (!check_depthstencil_size(desc)) // Ignore unlikely candidates
-		return;
+	//if (!check_depthstencil_size(desc)) // Ignore unlikely candidates
+	//	return;
 
 	// Check if any draw calls have been registered since the last clear operation
 	if (_current_db_drawcalls > min_db_drawcalls && _current_db_vertices > min_db_vertices)
@@ -511,17 +514,19 @@ void reshade::d3d9::runtime_d3d9::on_set_viewport(const D3DVIEWPORT9 *pViewport)
 	desc.Width = pViewport->Width;
 	desc.Height = pViewport->Height;
 	desc.MultiSampleType = D3DMULTISAMPLE_NONE;
-	_is_good_viewport = true;
+	_state_tracking.is_good_viewport = true;
 
-	if (_depthstencil_replacement == nullptr)
-		_is_good_viewport = check_depthstencil_size(desc);
-	else
-	{
-		_depthstencil_replacement->GetDesc(&depthstencil_desc);
-		_is_good_viewport = check_depthstencil_size(desc, depthstencil_desc);
-	}
+	//todo probably will add it later
+	//if (_depthstencil_replacement == nullptr)
+	//	_state_tracking.is_good_viewport = check_depthstencil_size(desc);
+	//else
+	//{
+	//	_depthstencil_replacement->GetDesc(&depthstencil_desc);
+	//	_state_tracking.is_good_viewport = check_depthstencil_size(desc, depthstencil_desc);
+	//}
 }
 
+#endif
 bool reshade::d3d9::runtime_d3d9::capture_screenshot(uint8_t *buffer) const
 {
 	if (_color_bit_depth != 8 && _color_bit_depth != 10)
@@ -1482,6 +1487,7 @@ void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 	_reset_buffer_detection |= ImGui::Checkbox("Use aspect ratio heuristics", &_state_tracking.use_aspect_ratio_heuristics);
 	_reset_buffer_detection |= ImGui::Checkbox("Copy depth buffer before clear operations", &_state_tracking.preserve_depth_buffers);
 
+	_reset_buffer_detection |= ImGui::Checkbox("FocusOnBestOriginalDepthstencilSource", &_state_tracking.focus_on_best_original_depthstencil_source);
 	_reset_buffer_detection |= ImGui::Checkbox("Brute force fix", &_state_tracking.brute_force_fix);
 	ImGui::Spacing();
 	ImGui::Separator();

@@ -46,6 +46,9 @@ namespace reshade::d3d9
 		bool preserve_depth_buffers = false;
 		bool use_aspect_ratio_heuristics = true;
 		bool brute_force_fix = false;
+		bool is_good_viewport = false;
+		bool is_best_original_depthstencil_source = false;
+		bool focus_on_best_original_depthstencil_source = true;
 		UINT depthstencil_clear_index = 0;
 
 		const auto &depth_buffer_counters() const { return _counters_per_used_depth_surface; }

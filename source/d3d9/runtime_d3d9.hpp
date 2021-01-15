@@ -36,6 +36,12 @@ namespace reshade::d3d9
 		bool capture_screenshot(uint8_t *buffer) const override;
 
 	private:
+		struct depth_source_info
+		{
+			com_ptr<IDirect3DSurface9> depthstencil;
+			UINT width, height;
+			UINT drawcall_count, vertices_count;
+		};
 		bool init_effect(size_t index) override;
 		void unload_effect(size_t index) override;
 		void unload_effects() override;
@@ -87,8 +93,18 @@ namespace reshade::d3d9
 		void draw_depth_debug_menu();
 		void update_depth_texture_bindings(com_ptr<IDirect3DSurface9> surface);
 
+		size_t _preserve_starting_index = 0;
+
+		unsigned int _current_db_vertices = 0;
+		unsigned int _current_db_drawcalls = 0;
+
 		com_ptr<IDirect3DTexture9> _depth_texture;
 		com_ptr<IDirect3DSurface9> _depth_surface;
+		com_ptr<IDirect3DSurface9> _depthstencil;
+		com_ptr<IDirect3DSurface9> _depthstencil_replacement;
+		com_ptr<IDirect3DSurface9> _default_depthstencil;
+		std::unordered_map<com_ptr<IDirect3DSurface9>, depth_source_info> _depth_source_table;
+		std::vector<depth_source_info> _depth_buffer_table;
 
 		bool _disable_intz = false;
 		bool _reset_buffer_detection = false;
