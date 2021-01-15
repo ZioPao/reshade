@@ -381,6 +381,18 @@ HRESULT STDMETHODCALLTYPE Direct3DDevice9::GetRenderTarget(DWORD RenderTargetInd
 HRESULT STDMETHODCALLTYPE Direct3DDevice9::SetDepthStencilSurface(IDirect3DSurface9 *pNewZStencil)
 {
 #if RESHADE_DEPTH
+	if (pNewZStencil != nullptr)
+	{
+		assert(_implicit_swapchain != nullptr);
+		assert(_implicit_swapchain->_runtime != nullptr);
+		_implicit_swapchain->_runtime->on_set_depthstencil_surface(pNewZStencil);
+
+		for (auto swapchain : _additional_swapchains)
+		{
+			assert(swapchain->_runtime != nullptr);
+			swapchain->_runtime->on_set_depthstencil_surface(pNewZStencil);
+		}
+	}
 	_state.on_set_depthstencil(pNewZStencil);
 #endif
 	return _orig->SetDepthStencilSurface(pNewZStencil);
@@ -394,6 +406,15 @@ HRESULT STDMETHODCALLTYPE Direct3DDevice9::GetDepthStencilSurface(IDirect3DSurfa
 		assert(ppZStencilSurface != nullptr);
 
 		_state.on_get_depthstencil(*ppZStencilSurface);
+		assert(_implicit_swapchain != nullptr);
+		assert(_implicit_swapchain->_runtime != nullptr);
+		_implicit_swapchain->_runtime->on_get_depthstencil_surface(*ppZStencilSurface);
+
+		for (auto swapchain : _additional_swapchains)
+		{
+			assert(swapchain->_runtime);
+			swapchain->_runtime->on_get_depthstencil_surface(*ppZStencilSurface);
+		}
 	}
 #endif
 	return hr;
