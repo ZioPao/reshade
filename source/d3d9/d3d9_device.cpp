@@ -565,14 +565,14 @@ float   STDMETHODCALLTYPE Direct3DDevice9::GetNPatchMode()
 }
 HRESULT STDMETHODCALLTYPE Direct3DDevice9::DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
 {
-	_state.weapon_or_cockpit_fix(PrimitiveType, PrimitiveCount);)
+	_state.weapon_or_cockpit_fix(PrimitiveType, StartVertex, PrimitiveCount);
 	_state.on_draw(PrimitiveType, PrimitiveCount);
 
 	return _orig->DrawPrimitive(PrimitiveType, StartVertex, PrimitiveCount);
 }
 HRESULT STDMETHODCALLTYPE Direct3DDevice9::DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT StartIndex, UINT PrimitiveCount)
 {
-	_state.weapon_or_cockpit_fix(PrimitiveType, PrimitiveCount);)
+	_state.weapon_or_cockpit_fix(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, StartIndex, PrimitiveCount);
 	_state.on_draw(PrimitiveType, PrimitiveCount);
 
 	return _orig->DrawIndexedPrimitive(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, StartIndex, PrimitiveCount);

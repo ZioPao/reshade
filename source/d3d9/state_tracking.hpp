@@ -46,15 +46,18 @@ namespace reshade::d3d9
 
 		void weapon_or_cockpit_fix(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
 		void weapon_or_cockpit_fix(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT StartIndex, UINT PrimitiveCount);
-		
+
+		void create_fixed_viewport(const D3DVIEWPORT9 mViewport);
+
 		// Detection Settings
 		bool disable_intz = false;
 		bool preserve_depth_buffers = false;
 		bool use_aspect_ratio_heuristics = true;
-		bool brute_force_fix = true;
-
-		bool is_good_viewport = true;
 		UINT depthstencil_clear_index = 0;
+
+		//Brute force fix stuff
+		bool brute_force_fix = true;
+		bool is_good_viewport = true;
 
 		const auto &depth_buffer_counters() const { return _counters_per_used_depth_surface; }
 		IDirect3DSurface9 *current_depth_surface() const { return _depthstencil_original.get(); }
@@ -73,7 +76,6 @@ namespace reshade::d3d9
 		bool check_texture_format(const D3DSURFACE_DESC &desc);
 
 		bool update_depthstencil_replacement(com_ptr<IDirect3DSurface9> depthstencil, size_t index);
-
 
 		com_ptr<IDirect3DSurface9> _depthstencil_original;
 		std::vector<com_ptr<IDirect3DSurface9>> _depthstencil_replacement;
