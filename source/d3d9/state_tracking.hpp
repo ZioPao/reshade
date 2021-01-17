@@ -33,6 +33,9 @@ namespace reshade::d3d9
 
 		explicit state_tracking(IDirect3DDevice9 *device) : _device(device) {}
 
+		UINT total_vertices() const { return _stats.vertices; }
+		UINT total_drawcalls() const { return _stats.drawcalls; }
+
 		void reset(bool release_resources);
 
 		void on_draw(D3DPRIMITIVETYPE type, UINT primitives);
@@ -41,14 +44,16 @@ namespace reshade::d3d9
 		void on_get_depthstencil(IDirect3DSurface9 *&depthstencil);
 		void on_clear_depthstencil(UINT clear_flags);
 
+		void weapon_or_cockpit_fix(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
+		void weapon_or_cockpit_fix(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT StartIndex, UINT PrimitiveCount);
+		
 		// Detection Settings
 		bool disable_intz = false;
 		bool preserve_depth_buffers = false;
 		bool use_aspect_ratio_heuristics = true;
-		bool brute_force_fix = false;
-		bool is_good_viewport = false;
-		bool is_best_original_depthstencil_source = false;
-		bool focus_on_best_original_depthstencil_source = true;
+		bool brute_force_fix = true;
+
+		bool is_good_viewport = true;
 		UINT depthstencil_clear_index = 0;
 
 		const auto &depth_buffer_counters() const { return _counters_per_used_depth_surface; }
@@ -68,6 +73,7 @@ namespace reshade::d3d9
 		bool check_texture_format(const D3DSURFACE_DESC &desc);
 
 		bool update_depthstencil_replacement(com_ptr<IDirect3DSurface9> depthstencil, size_t index);
+
 
 		com_ptr<IDirect3DSurface9> _depthstencil_original;
 		std::vector<com_ptr<IDirect3DSurface9>> _depthstencil_replacement;

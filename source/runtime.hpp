@@ -199,10 +199,6 @@ namespace reshade
 		/// </summary>
 		bool save_effect_cache(const std::filesystem::path &source_file, const size_t hash, const std::string &source) const;
 		bool save_effect_cache(const std::filesystem::path &source_file, const std::string &entry_point, const size_t hash, const std::vector<char> &cso, const std::string &dasm) const;
-		/// <summary>
-		/// Remove all compiled effect data from disk.
-		/// </summary>
-		void clear_effect_cache();
 
 		/// <summary>
 		/// Load image files and update textures with image data.
@@ -245,9 +241,9 @@ namespace reshade
 		unsigned int _renderer_id = 0;
 		unsigned int _color_bit_depth = 8;
 
+		uint64_t _framecount = 0;
 		unsigned int _vertices = 0;
 		unsigned int _drawcalls = 0;
-		uint64_t _framecount = 0;
 
 		std::vector<effect> _effects;
 		std::vector<texture> _textures;
@@ -323,7 +319,6 @@ namespace reshade
 
 		// === Effect Loading ===
 		bool _no_debug_info = 0;
-		bool _no_effect_cache = false;
 		bool _no_reload_on_init = false;
 		bool _effect_load_skipping = false;
 		bool _load_option_disable_skipping = false;

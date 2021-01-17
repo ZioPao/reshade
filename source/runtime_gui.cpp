@@ -1244,9 +1244,6 @@ void reshade::runtime::draw_gui_home()
 
 		if (ImGui::Button(ICON_FK_REFRESH " Reload", ImVec2(-11.5f * _font_size, 0)))
 		{
-			if (!_no_effect_cache && (ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeyShift))
-				clear_effect_cache();
-
 			reload_effects();
 		}
 
@@ -1349,7 +1346,22 @@ void reshade::runtime::draw_gui_settings()
 		}
 
 		if (ImGui::Button("Clear effect cache", ImVec2(ImGui::CalcItemWidth(), 0)))
-			clear_effect_cache();
+		{
+			// Find all cached effect files and delete them
+			std::error_code ec;
+			for (const std::filesystem::directory_entry &entry : std::filesystem::directory_iterator(g_reshade_base_path / _intermediate_cache_path, std::filesystem::directory_options::skip_permission_denied, ec))
+			{
+				if (entry.is_directory(ec))
+					continue;
+
+				const std::filesystem::path filename = entry.path().filename();
+				const std::filesystem::path extension = entry.path().extension();
+				if (filename.native().compare(0, 8, L"reshade-") != 0 || (extension != L".i" && extension != L".cso" && extension != L".asm"))
+					continue;
+
+				DeleteFileW(entry.path().c_str());
+			}
+		}
 	}
 
 	if (ImGui::CollapsingHeader("Screenshots", ImGuiTreeNodeFlags_DefaultOpen))
@@ -1587,6 +1599,7 @@ void reshade::runtime::draw_gui_statistics()
 		ImGui::TextUnformatted("Time:");
 		ImGui::TextUnformatted("Network:");
 		ImGui::Text("Frame %llu:", _framecount + 1);
+		ImGui::NewLine();
 		ImGui::TextUnformatted("Post-Processing:");
 
 		ImGui::EndGroup();
@@ -1601,6 +1614,7 @@ void reshade::runtime::draw_gui_statistics()
 		ImGui::Text("%d-%d-%d %d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour * 3600 + tm.tm_min * 60 + tm.tm_sec);
 		ImGui::Text("%u B", g_network_traffic);
 		ImGui::Text("%.2f fps", _imgui_context->IO.Framerate);
+		ImGui::Text("%u draw calls", _drawcalls);
 		ImGui::Text("%*.3f ms CPU", cpu_digits + 4, post_processing_time_cpu * 1e-6f);
 
 		ImGui::EndGroup();
@@ -1615,6 +1629,7 @@ void reshade::runtime::draw_gui_statistics()
 		ImGui::Text("%.0f ms", std::chrono::duration_cast<std::chrono::nanoseconds>(_last_present_time - _start_time).count() * 1e-6f);
 		ImGui::NewLine();
 		ImGui::Text("%*.3f ms", gpu_digits + 4, _last_frame_duration.count() * 1e-6f);
+		ImGui::Text("%u vertices", _vertices);
 		if (post_processing_time_gpu != 0)
 			ImGui::Text("%*.3f ms GPU", gpu_digits + 4, (post_processing_time_gpu * 1e-6f));
 

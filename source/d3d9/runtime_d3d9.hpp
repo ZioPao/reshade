@@ -6,7 +6,7 @@
 #pragma once
 
 #include "runtime.hpp"
-#include "state_block_d3d9.hpp"
+#include "state_block.hpp"
 #include "state_tracking.hpp"
 
 namespace reshade::d3d9
@@ -21,27 +21,9 @@ namespace reshade::d3d9
 		void on_reset();
 		void on_present();
 
-		//Brute fix methods
-		void on_draw_primitive(D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
-		void on_draw_indexed_primitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT StartIndex, UINT PrimitiveCount);
-		void on_draw_primitive_up(D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, const void *pVertexStreamZeroData, UINT VertexStreamZeroStride);
-		void on_draw_indexed_primitive_up(D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void *pIndexData, D3DFORMAT IndexDataFormat, const void *pVertexStreamZeroData, UINT VertexStreamZeroStride);
-		void on_draw_call(com_ptr<IDirect3DSurface9> depthstencil, D3DPRIMITIVETYPE type, unsigned int count);
-
-		void on_set_depthstencil_surface(IDirect3DSurface9 *&depthstencil);
-		void on_get_depthstencil_surface(IDirect3DSurface9 *&depthstencil);
-		void on_clear_depthstencil_surface(IDirect3DSurface9 *depthstencil);
-		void on_set_viewport(const D3DVIEWPORT9 *pViewport);
-
 		bool capture_screenshot(uint8_t *buffer) const override;
 
 	private:
-		struct depth_source_info
-		{
-			com_ptr<IDirect3DSurface9> depthstencil;
-			UINT width, height;
-			UINT drawcall_count, vertices_count;
-		};
 		bool init_effect(size_t index) override;
 		void unload_effect(size_t index) override;
 		void unload_effects() override;
@@ -93,18 +75,8 @@ namespace reshade::d3d9
 		void draw_depth_debug_menu();
 		void update_depth_texture_bindings(com_ptr<IDirect3DSurface9> surface);
 
-		size_t _preserve_starting_index = 0;
-
-		unsigned int _current_db_vertices = 0;
-		unsigned int _current_db_drawcalls = 0;
-
 		com_ptr<IDirect3DTexture9> _depth_texture;
 		com_ptr<IDirect3DSurface9> _depth_surface;
-		com_ptr<IDirect3DSurface9> _depthstencil;
-		com_ptr<IDirect3DSurface9> _depthstencil_replacement;
-		com_ptr<IDirect3DSurface9> _default_depthstencil;
-		std::unordered_map<com_ptr<IDirect3DSurface9>, depth_source_info> _depth_source_table;
-		std::vector<depth_source_info> _depth_buffer_table;
 
 		bool _disable_intz = false;
 		bool _reset_buffer_detection = false;

@@ -14,7 +14,7 @@
 
 extern bool is_windows7();
 
-// Needs to be set whenever a DXGI call can end up in 'CDXGISwapChain::EnsureChildDeviceInternal', to avoid hooking internal D3D device creation
+// Use this to filter out internal device created by the DXGI runtime in the D3D device creation hooks 
 extern thread_local bool g_in_dxgi_runtime;
 
 static void dump_format(DXGI_FORMAT format)

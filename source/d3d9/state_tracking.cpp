@@ -65,7 +65,7 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 	_stats.vertices += vertices;
 	_stats.drawcalls += 1;
 
-#if RESHADE_DEPTH
+//#if RESHADE_DEPTH
 	com_ptr<IDirect3DSurface9> depthstencil;
 	_device->GetDepthStencilSurface(&depthstencil);
 
@@ -84,8 +84,9 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 		counters.current_stats.vertices += vertices;
 		counters.current_stats.drawcalls += 1;
 		_device->GetViewport(&counters.current_stats.viewport);
+
 	}
-#endif
+//#endif
 }
 
 #if RESHADE_DEPTH

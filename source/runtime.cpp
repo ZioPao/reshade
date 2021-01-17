@@ -232,6 +232,7 @@ void reshade::runtime::on_present()
 
 	// Reset frame statistics
 	g_network_traffic = 0;
+	_drawcalls = _vertices = 0;
 }
 
 bool reshade::runtime::load_effect(const std::filesystem::path &source_file, const reshade::ini_file &preset, size_t effect_index, bool preprocess_required)
@@ -846,9 +847,6 @@ void reshade::runtime::reload_effects()
 
 bool reshade::runtime::load_effect_cache(const std::filesystem::path &source_file, const size_t hash, std::string &source) const
 {
-	if (_no_effect_cache)
-		return false;
-
 	std::filesystem::path path = g_reshade_base_path / _intermediate_cache_path;
 	path /= std::filesystem::u8path("reshade-" + source_file.stem().u8string() + '-' + std::to_string(_renderer_id) + '-' + std::to_string(hash) + ".i");
 
@@ -863,9 +861,6 @@ bool reshade::runtime::load_effect_cache(const std::filesystem::path &source_fil
 }
 bool reshade::runtime::load_effect_cache(const std::filesystem::path &source_file, const std::string &entry_point, const size_t hash, std::vector<char> &cso, std::string &dasm) const
 {
-	if (_no_effect_cache)
-		return false;
-
 	std::filesystem::path path = g_reshade_base_path / _intermediate_cache_path;
 	path /= std::filesystem::u8path("reshade-" + source_file.stem().u8string() + '-' + entry_point + '-' + std::to_string(_renderer_id) + '-' + std::to_string(hash) + ".cso");
 
@@ -897,9 +892,6 @@ bool reshade::runtime::load_effect_cache(const std::filesystem::path &source_fil
 }
 bool reshade::runtime::save_effect_cache(const std::filesystem::path &source_file, const size_t hash, const std::string &source) const
 {
-	if (_no_effect_cache)
-		return false;
-
 	std::filesystem::path path = g_reshade_base_path / _intermediate_cache_path;
 	path /= std::filesystem::u8path("reshade-" + source_file.stem().u8string() + '-' + std::to_string(_renderer_id) + '-' + std::to_string(hash) + ".i");
 
@@ -913,9 +905,6 @@ bool reshade::runtime::save_effect_cache(const std::filesystem::path &source_fil
 }
 bool reshade::runtime::save_effect_cache(const std::filesystem::path &source_file, const std::string &entry_point, const size_t hash, const std::vector<char> &cso, const std::string &dasm) const
 {
-	if (_no_effect_cache)
-		return false;
-
 	std::filesystem::path path = g_reshade_base_path / _intermediate_cache_path;
 	path /= std::filesystem::u8path("reshade-" + source_file.stem().u8string() + '-' + entry_point + '-' + std::to_string(_renderer_id) + '-' + std::to_string(hash) + ".cso");
 
@@ -942,24 +931,6 @@ bool reshade::runtime::save_effect_cache(const std::filesystem::path &source_fil
 	}
 
 	return true;
-}
-
-void reshade::runtime::clear_effect_cache()
-{
-	// Find all cached effect files and delete them
-	std::error_code ec;
-	for (const std::filesystem::directory_entry &entry : std::filesystem::directory_iterator(g_reshade_base_path / _intermediate_cache_path, std::filesystem::directory_options::skip_permission_denied, ec))
-	{
-		if (entry.is_directory(ec))
-			continue;
-
-		const std::filesystem::path filename = entry.path().filename();
-		const std::filesystem::path extension = entry.path().extension();
-		if (filename.native().compare(0, 8, L"reshade-") != 0 || (extension != L".i" && extension != L".cso" && extension != L".asm"))
-			continue;
-
-		DeleteFileW(entry.path().c_str());
-	}
 }
 
 void reshade::runtime::update_and_render_effects()
@@ -1124,7 +1095,7 @@ void reshade::runtime::update_and_render_effects()
 
 		for (uniform &variable : effect.uniforms)
 		{
-			if (!_ignore_shortcuts && _input->is_key_pressed(variable.toggle_key_data, _force_shortcut_modifiers))
+			if (!_ignore_shortcuts && variable.toggle_key_data[0] != 0 && _input->is_key_pressed(variable.toggle_key_data, _force_shortcut_modifiers))
 			{
 				assert(variable.supports_toggle_key());
 
@@ -1419,7 +1390,6 @@ void reshade::runtime::load_config()
 	config.get("INPUT", "KeyScreenshot", _screenshot_key_data);
 
 	config.get("GENERAL", "NoDebugInfo", _no_debug_info);
-	config.get("GENERAL", "NoEffectCache", _no_effect_cache);
 	config.get("GENERAL", "NoReloadOnInit", _no_reload_on_init);
 
 	config.get("GENERAL", "EffectSearchPaths", _effect_search_paths);
@@ -1467,10 +1437,6 @@ void reshade::runtime::save_config() const
 	config.set("INPUT", "KeyPreviousPreset", _prev_preset_key_data);
 	config.set("INPUT", "KeyReload", _reload_key_data);
 	config.set("INPUT", "KeyScreenshot", _screenshot_key_data);
-
-	config.set("GENERAL", "NoDebugInfo", _no_debug_info);
-	config.set("GENERAL", "NoEffectCache", _no_effect_cache);
-	config.set("GENERAL", "NoReloadOnInit", _no_reload_on_init);
 
 	config.set("GENERAL", "EffectSearchPaths", _effect_search_paths);
 	config.set("GENERAL", "PerformanceMode", _performance_mode);
@@ -1574,12 +1540,13 @@ void reshade::runtime::load_current_preset()
 
 			if (variable.supports_toggle_key())
 			{
-				if (!preset.get(section, "Key" + variable.name, variable.toggle_key_data))
-					std::memset(variable.toggle_key_data, 0, sizeof(variable.toggle_key_data));
+				// Load shortcut key, but first reset it, since it may not exist in the preset file
+				std::memset(variable.toggle_key_data, 0, sizeof(variable.toggle_key_data));
+				preset.get(section, "Key" + variable.name, variable.toggle_key_data);
 			}
 
-			// Reset values to defaults before loading from a new preset
 			if (!_is_in_between_presets_transition)
+				// Reset values to defaults before loading from a new preset
 				reset_uniform_value(variable);
 
 			reshadefx::constant values, values_old;
@@ -1628,14 +1595,14 @@ void reshade::runtime::load_current_preset()
 		else
 			disable_technique(technique);
 
+		// Reset toggle key to the value set via annotation first, since it may not exist in the preset
+		technique.toggle_key_data[0] = technique.annotation_as_int("toggle");
+		technique.toggle_key_data[1] = technique.annotation_as_int("togglectrl");
+		technique.toggle_key_data[2] = technique.annotation_as_int("toggleshift");
+		technique.toggle_key_data[3] = technique.annotation_as_int("togglealt");
 		if (!preset.get({}, "Key" + unique_name, technique.toggle_key_data) &&
 			!preset.get({}, "Key" + technique.name, technique.toggle_key_data))
-		{
-			technique.toggle_key_data[0] = technique.annotation_as_int("toggle");
-			technique.toggle_key_data[1] = technique.annotation_as_int("togglectrl");
-			technique.toggle_key_data[2] = technique.annotation_as_int("toggleshift");
-			technique.toggle_key_data[3] = technique.annotation_as_int("togglealt");
-		}
+			std::memset(technique.toggle_key_data, 0, std::size(technique.toggle_key_data));
 	}
 }
 void reshade::runtime::save_current_preset() const
@@ -1664,10 +1631,8 @@ void reshade::runtime::save_current_preset() const
 
 		if (technique.toggle_key_data[0] != 0)
 			preset.set({}, "Key" + unique_name, technique.toggle_key_data);
-		else if (technique.annotation_as_int("toggle") != 0)
-			preset.set({}, "Key" + unique_name, 0); // Overwrite default toggle key to none
-		else
-			preset.remove_key({}, "Key" + unique_name);
+		else if (int value = 0; preset.get({}, "Key" + unique_name, value) && value != 0)
+			preset.set({}, "Key" + unique_name, 0); // Clear toggle key data
 	}
 
 	preset.set({}, "Techniques", std::move(technique_list));
@@ -1696,8 +1661,8 @@ void reshade::runtime::save_current_preset() const
 				// save the shortcut key into the preset files
 				if (variable.toggle_key_data[0] != 0)
 					preset.set(section, "Key" + variable.name, variable.toggle_key_data);
-				else
-					preset.remove_key(section, "Key" + variable.name);
+				else if (int value = 0; preset.get(section, "Key" + variable.name, value) && value != 0)
+					preset.set(section, "Key" + variable.name, 0); // Clear toggle key data
 			}
 
 			switch (variable.type.base)
