@@ -1245,6 +1245,7 @@ void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 
 	_reset_buffer_detection |= ImGui::Checkbox("Use aspect ratio heuristics", &_state_tracking.use_aspect_ratio_heuristics);
 	_reset_buffer_detection |= ImGui::Checkbox("Copy depth buffer before clear operations", &_state_tracking.preserve_depth_buffers);
+	_reset_buffer_detection |= ImGui::Checkbox("Brute Force Fix", &_state_tracking.brute_force_fix);
 
 	ImGui::Spacing();
 	ImGui::Separator();
