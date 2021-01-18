@@ -29,14 +29,18 @@ void reshade::d3d9::state_tracking::reset(bool release_resources)
 		com_ptr<IDirect3DSurface9> depthstencil;
 		_device->GetDepthStencilSurface(&depthstencil);
 
+
 		// Clear the first replacement at the end of the frame, since any clear performed by the application was redirected to a different one
 		// Do not have to do this to the others, since the first operation on any of them is a clear anyway (see 'on_clear_depthstencil')
 		_device->SetDepthStencilSurface(_depthstencil_replacement[0].get());
 		_device->Clear(0, nullptr, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 
 		// Keep the depth-stencil surface set to the first replacement (because of the above 'SetDepthStencilSurface' call) if the original one we want to replace was set, so starting next frame it is the one used again
-		if (std::find(_depthstencil_replacement.begin(), _depthstencil_replacement.end(), depthstencil) == _depthstencil_replacement.end() && depthstencil != _depthstencil_original)
+		if (std::find(_depthstencil_replacement.begin(), _depthstencil_replacement.end(), depthstencil) == _depthstencil_replacement.end() && depthstencil != _depthstencil_original) {
 			_device->SetDepthStencilSurface(depthstencil.get());
+		}
+
+
 	}
 #else
 	UNREFERENCED_PARAMETER(release_resources);
@@ -76,6 +80,12 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 	if (std::find(_depthstencil_replacement.begin(), _depthstencil_replacement.end(), depthstencil) != _depthstencil_replacement.end())
 		depthstencil = _depthstencil_original;
 
+
+	////Probably gonna break a lot of things
+	//// remove parasite items
+	//if (!is_good_viewport)
+	//	return;
+
 	// Update draw statistics for tracked depth-stencil surfaces
 	auto &counters = _counters_per_used_depth_surface[depthstencil];
 	counters.total_stats.vertices += vertices;
@@ -94,13 +104,15 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 #if RESHADE_DEPTH
 void reshade::d3d9::state_tracking::on_set_depthstencil(IDirect3DSurface9 *&depthstencil)
 {
-	if (depthstencil == nullptr || depthstencil != _depthstencil_original)
+	is_best_original_depthstencil_source = (depthstencil == _depthstencil_original);
+	LOG(INFO) << "is_best_original_depthstencil_source -> " << is_best_original_depthstencil_source;
+
+	if (depthstencil == nullptr || depthstencil != _depthstencil_original){
 		return;
+	}
 
 	const size_t replacement_index = preserve_depth_buffers ?
 		_counters_per_used_depth_surface[_depthstencil_original].clears.size() : 0;
-
-	is_best_original_depthstencil_source = (depthstencil == _depthstencil_original);
 
 	// Replace application depth-stencil surface with our custom one
 	if (_depthstencil_replacement[replacement_index] != nullptr)
@@ -265,7 +277,8 @@ void reshade::d3d9::state_tracking::weapon_or_cockpit_fix(D3DPRIMITIVETYPE Primi
 
 	if (brute_force_fix &&
 		is_best_original_depthstencil_source &&
-		depth_buffer_counters().size() > depthstencil_clear_index + 1)
+		is_good_viewport &&			
+		_counters_per_used_depth_surface.size() > depthstencil_clear_index - 1)
 	{
 		D3DVIEWPORT9 mViewport; // Holds viewport data
 		_device->GetViewport(&mViewport); // retrieve current viewport
@@ -295,8 +308,9 @@ void reshade::d3d9::state_tracking::weapon_or_cockpit_fix(D3DPRIMITIVETYPE Primi
 {
 
 	if (brute_force_fix &&
-		is_best_original_depthstencil_source &&
-		depth_buffer_counters().size() > depthstencil_clear_index+1)		//todo _adjusted_preserve_starting_index should be here, trying to set 0 just to see what it does
+		is_best_original_depthstencil_source &&		
+		is_good_viewport &&
+		_counters_per_used_depth_surface.size() > depthstencil_clear_index - 1)
 	{
 		D3DVIEWPORT9 mViewport; // Holds viewport data
 		_device->GetViewport(&mViewport); // retrieve current viewport
@@ -333,7 +347,6 @@ void reshade::d3d9::state_tracking::create_fixed_viewport(const D3DVIEWPORT9 mVi
 
 com_ptr<IDirect3DSurface9> reshade::d3d9::state_tracking::find_best_depth_surface(UINT width, UINT height, com_ptr<IDirect3DSurface9> override)
 {
-	bool no_replacement = true;
 	depthstencil_info best_snapshot;
 	com_ptr<IDirect3DSurface9> best_match = std::move(override);
 	com_ptr<IDirect3DSurface9> best_replacement = _depthstencil_replacement.empty() ? nullptr : _depthstencil_replacement[0];
@@ -360,7 +373,10 @@ com_ptr<IDirect3DSurface9> reshade::d3d9::state_tracking::find_best_depth_surfac
 			if (desc.MultiSampleType != D3DMULTISAMPLE_NONE)
 				continue; // MSAA depth buffers are not supported since they would have to be moved into a plain surface before attaching to a shader slot
 
-			if (use_aspect_ratio_heuristics && !check_aspect_ratio(desc.Width, desc.Height, width, height))
+			is_good_viewport = use_aspect_ratio_heuristics && check_aspect_ratio(desc.Width, desc.Height, width, height);
+			LOG(INFO) << "is_good_viewport -> " << is_good_viewport;
+
+			if (!is_good_viewport)
 				continue; // Not a good fit
 
 			const auto curr_weight = snapshot.total_stats.vertices * (1.2f - static_cast<float>(snapshot.total_stats.drawcalls) / _stats.drawcalls);

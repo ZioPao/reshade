@@ -82,6 +82,7 @@ reshade::d3d9::runtime_d3d9::runtime_d3d9(IDirect3DDevice9 *device, IDirect3DSwa
 		config.get("DEPTH", "DepthCopyBeforeClears", _state_tracking.preserve_depth_buffers);
 		config.get("DEPTH", "DepthCopyAtClearIndex", _state_tracking.depthstencil_clear_index);
 		config.get("DEPTH", "UseAspectRatioHeuristics", _state_tracking.use_aspect_ratio_heuristics);
+		config.get("DEPTH", "BruteForceFix", _state_tracking.brute_force_fix);
 
 		if (_state_tracking.depthstencil_clear_index == std::numeric_limits<UINT>::max())
 			_state_tracking.depthstencil_clear_index  = 0;
@@ -91,6 +92,8 @@ reshade::d3d9::runtime_d3d9::runtime_d3d9(IDirect3DDevice9 *device, IDirect3DSwa
 		config.set("DEPTH", "DepthCopyBeforeClears", _state_tracking.preserve_depth_buffers);
 		config.set("DEPTH", "DepthCopyAtClearIndex", _state_tracking.depthstencil_clear_index);
 		config.set("DEPTH", "UseAspectRatioHeuristics", _state_tracking.use_aspect_ratio_heuristics);
+		config.set("DEPTH", "BruteForceFix", _state_tracking.brute_force_fix);
+
 	});
 #endif
 
@@ -1229,7 +1232,6 @@ void reshade::d3d9::runtime_d3d9::render_imgui_draw_data(ImDrawData *draw_data)
 #if RESHADE_DEPTH
 void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 {
-	LOG(INFO) << "Entered depth menu";
 	if (!ImGui::CollapsingHeader("Depth Buffers", ImGuiTreeNodeFlags_DefaultOpen))
 		return;
 
@@ -1246,13 +1248,14 @@ void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 
 	_reset_buffer_detection |= ImGui::Checkbox("Use aspect ratio heuristics", &_state_tracking.use_aspect_ratio_heuristics);
 	_reset_buffer_detection |= ImGui::Checkbox("Copy depth buffer before clear operations", &_state_tracking.preserve_depth_buffers);
-	_reset_buffer_detection |= ImGui::Checkbox("Brute Force Fix", &_state_tracking.brute_force_fix);
+
+	if (_state_tracking.preserve_depth_buffers) {
+		_reset_buffer_detection |= ImGui::Checkbox("Brute Force Fix", &_state_tracking.brute_force_fix);
+	}
 
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
-
-	LOG(INFO) << "Started sorting buffers";
 
 	// Sort pointer list so that added/removed items do not change the UI much
 	std::vector<std::pair<IDirect3DSurface9 *, state_tracking::depthstencil_info>> sorted_buffers;
@@ -1260,7 +1263,6 @@ void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 	for (const auto &[ds_surface, snapshot] : _state_tracking.depth_buffer_counters())
 		sorted_buffers.push_back({ ds_surface.get(), snapshot });
 	std::sort(sorted_buffers.begin(), sorted_buffers.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
-	LOG(INFO) << "Reading buffers";
 
 	for (const auto &[ds_surface, snapshot] : sorted_buffers)
 	{

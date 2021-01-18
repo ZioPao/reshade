@@ -56,9 +56,11 @@ namespace reshade::d3d9
 		UINT depthstencil_clear_index = 0;
 
 		//Brute force fix stuff
-		bool brute_force_fix = true;
-		bool is_good_viewport = false;
-		bool is_best_original_depthstencil_source = true;
+		bool brute_force_fix = false;
+		bool is_good_viewport = false;		//todo update it, I have no idea how and when
+		bool is_best_original_depthstencil_source = false;	//Should be ok, but I'm not sure if updating there is the best way
+
+		bool no_replacement = true;		//really stupid test
 
 
 		const auto &depth_buffer_counters() const { return _counters_per_used_depth_surface; }
