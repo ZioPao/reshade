@@ -57,7 +57,7 @@ namespace reshade::d3d9
 
 		//Brute force fix stuff
 		bool brute_force_fix = true;
-		bool is_good_viewport = true;
+		bool is_good_viewport = false;
 		bool is_best_original_depthstencil_source = true;
 
 

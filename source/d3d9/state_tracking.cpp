@@ -69,8 +69,10 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 	com_ptr<IDirect3DSurface9> depthstencil;
 	_device->GetDepthStencilSurface(&depthstencil);
 
-	if (depthstencil == nullptr)
+	if (depthstencil == nullptr) {
 		return; // This is a draw call with no depth-stencil bound
+
+	}
 	if (std::find(_depthstencil_replacement.begin(), _depthstencil_replacement.end(), depthstencil) != _depthstencil_replacement.end())
 		depthstencil = _depthstencil_original;
 
@@ -84,6 +86,7 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 		counters.current_stats.vertices += vertices;
 		counters.current_stats.drawcalls += 1;
 		_device->GetViewport(&counters.current_stats.viewport);
+	
 	}
 #endif
 }
@@ -261,18 +264,20 @@ void reshade::d3d9::state_tracking::weapon_or_cockpit_fix(D3DPRIMITIVETYPE Primi
 {
 
 	if (brute_force_fix &&
-		is_good_viewport &&
 		is_best_original_depthstencil_source &&
-		_depthstencil_replacement.size() > 0)		//todo _adjusted_preserve_starting_index should be here, trying to set 2 just to see what it does
+		depth_buffer_counters().size() > depthstencil_clear_index + 1)
 	{
 		D3DVIEWPORT9 mViewport; // Holds viewport data
 		_device->GetViewport(&mViewport); // retrieve current viewport
+
+		//if (find_best_depth_surface(mViewport.Height, mViewport.Width) == nullptr)
+		//	return;
 
 		// Viewport work around (help resolving z-fighting issues)
 		create_fixed_viewport(mViewport);
 
 		//todo needed method to switch
-		_device->SetDepthStencilSurface(_depthstencil_replacement.at(0).get());
+		_device->SetDepthStencilSurface(current_depth_replacement());		//Depthstencil replacement wasn't like this before
 
 		if (FAILED(_device->DrawPrimitive(PrimitiveType, StartVertex, PrimitiveCount)))
 		{
@@ -288,19 +293,21 @@ void reshade::d3d9::state_tracking::weapon_or_cockpit_fix(D3DPRIMITIVETYPE Primi
 }
 void reshade::d3d9::state_tracking::weapon_or_cockpit_fix(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT StartIndex, UINT PrimitiveCount)
 {
+
 	if (brute_force_fix &&
-		is_good_viewport &&
 		is_best_original_depthstencil_source &&
-		_depthstencil_replacement.size() > 0)		//todo _adjusted_preserve_starting_index should be here, trying to set 0 just to see what it does
+		depth_buffer_counters().size() > depthstencil_clear_index+1)		//todo _adjusted_preserve_starting_index should be here, trying to set 0 just to see what it does
 	{
 		D3DVIEWPORT9 mViewport; // Holds viewport data
 		_device->GetViewport(&mViewport); // retrieve current viewport
 
+		//if (find_best_depth_surface(mViewport.Height, mViewport.Width) == nullptr)
+		//	return;
+
 		// Viewport work around (help resolving z-fighting issues)
 		create_fixed_viewport(mViewport);
-		_device->SetDepthStencilSurface(_depthstencil_replacement.at(0).get());
+		_device->SetDepthStencilSurface(current_depth_replacement());
 
-		//todo reactivate it
 		_device->DrawIndexedPrimitive(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, StartIndex, PrimitiveCount);
 
 		// Original viewport is reloaded

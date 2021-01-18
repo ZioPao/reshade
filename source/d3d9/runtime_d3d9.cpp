@@ -1229,6 +1229,7 @@ void reshade::d3d9::runtime_d3d9::render_imgui_draw_data(ImDrawData *draw_data)
 #if RESHADE_DEPTH
 void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 {
+	LOG(INFO) << "Entered depth menu";
 	if (!ImGui::CollapsingHeader("Depth Buffers", ImGuiTreeNodeFlags_DefaultOpen))
 		return;
 
@@ -1251,12 +1252,16 @@ void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 	ImGui::Separator();
 	ImGui::Spacing();
 
+	LOG(INFO) << "Started sorting buffers";
+
 	// Sort pointer list so that added/removed items do not change the UI much
 	std::vector<std::pair<IDirect3DSurface9 *, state_tracking::depthstencil_info>> sorted_buffers;
 	sorted_buffers.reserve(_state_tracking.depth_buffer_counters().size());
 	for (const auto &[ds_surface, snapshot] : _state_tracking.depth_buffer_counters())
 		sorted_buffers.push_back({ ds_surface.get(), snapshot });
 	std::sort(sorted_buffers.begin(), sorted_buffers.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+	LOG(INFO) << "Reading buffers";
+
 	for (const auto &[ds_surface, snapshot] : sorted_buffers)
 	{
 		char label[512] = "";
