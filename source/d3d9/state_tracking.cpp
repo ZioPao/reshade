@@ -40,6 +40,40 @@ void reshade::d3d9::state_tracking::reset(bool release_resources)
 			_device->SetDepthStencilSurface(depthstencil.get());
 		}
 
+		//!!!!IS_GOOD_VIEWPORT DOES NOT BELONG HERE!!!!
+		/* it goes trough this path only once basically, and then it'll start
+		looping on_draw.
+		*/
+		D3DSURFACE_DESC descV, descD;
+		D3DVIEWPORT9 pViewport;
+		_device->GetViewport(&pViewport);
+
+		//stores it in desc
+		descV.Width = pViewport.Width;
+		descV.Height = pViewport.Height;
+		descV.MultiSampleType = D3DMULTISAMPLE_NONE;
+
+		depthstencil->GetDesc(&descD);
+
+		//is_good_viewport = (descV.Width >= floor(descD.Width * 0.95) && descV.Width <= ceil(descD.Width * 1.05)) && (descV.Height >= floor(descD.Height * 0.95) && descV.Height <= ceil(descD.Height * 1.05));
+
+		if ((descV.Width >= floor(descD.Width * 0.95) && descV.Width <= ceil(descD.Width * 1.05))
+			&& (descV.Height >= floor(descD.Height * 0.95) && descV.Height <= ceil(descD.Height * 1.05))) {
+			is_good_viewport = true;
+		}
+		else {
+			is_good_viewport = false;
+		}
+
+		LOG(INFO) << "____________________________________";
+		LOG(INFO) << "descV width -> " << descV.Width;
+		LOG(INFO) << "descV height -> " << descV.Height;
+
+		LOG(INFO) << "descD width -> " << descD.Width;
+		LOG(INFO) << "descD height -> " << descD.Height;
+
+		LOG(INFO) << "is_good_viewport -> " << is_good_viewport;
+
 
 	}
 #else
@@ -93,21 +127,10 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 
 	if (preserve_depth_buffers)
 	{
-		D3DSURFACE_DESC descV, descD;
 		counters.current_stats.vertices += vertices;
 		counters.current_stats.drawcalls += 1;
 		_device->GetViewport(&counters.current_stats.viewport);
 
-		//stores it in desc
-		descV.Width = counters.current_stats.viewport.Width;
-		descV.Height = counters.current_stats.viewport.Width;
-		descV.MultiSampleType = D3DMULTISAMPLE_NONE;
-
-		depthstencil->GetDesc(&descD);
-
-		is_good_viewport = (descV.Width >= floor(descD.Width * 0.95) && descV.Width <= ceil(descD.Width * 1.05)) && (descV.Height >= floor(descD.Height * 0.95) && descV.Height <= ceil(descD.Height * 1.05));
-		
-		//LOG(INFO) << "is_good_viewport -> " << is_good_viewport;
 	}
 #endif
 }
@@ -116,7 +139,7 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 void reshade::d3d9::state_tracking::on_set_depthstencil(IDirect3DSurface9 *&depthstencil)
 {
 	is_best_original_depthstencil_source = (depthstencil == _depthstencil_original);
-	LOG(INFO) << "is_best_original_depthstencil_source -> " << is_best_original_depthstencil_source;
+	//LOG(INFO) << "is_best_original_depthstencil_source -> " << is_best_original_depthstencil_source;
 
 	if (depthstencil == nullptr || depthstencil != _depthstencil_original){
 		return;
@@ -319,18 +342,19 @@ void reshade::d3d9::state_tracking::weapon_or_cockpit_fix(D3DPRIMITIVETYPE Primi
 {
 
 	if (brute_force_fix &&
-		is_good_viewport)
+		is_good_viewport &&
+		is_best_original_depthstencil_source)
 	{
-
 		LOG(INFO) << "Entered weapon_or_cockpit_fix";
+
 		D3DVIEWPORT9 mViewport; // Holds viewport data
 		_device->GetViewport(&mViewport); // retrieve current viewport
 
-
 		// Viewport work around (help resolving z-fighting issues)
 		create_fixed_viewport(mViewport);
-		_device->SetDepthStencilSurface(current_depth_replacement());
 
+		LOG(INFO) << "Setting current_depth_replacement";
+		_device->SetDepthStencilSurface(current_depth_replacement());
 		_device->DrawIndexedPrimitive(PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, StartIndex, PrimitiveCount);
 
 		// Original viewport is reloaded

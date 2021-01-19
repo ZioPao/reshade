@@ -1290,7 +1290,7 @@ void reshade::d3d9::runtime_d3d9::draw_depth_debug_menu()
 		ImGui::Text("| %4ux%-4u | %5u draw calls ==> %8u vertices |%s",
 			desc.Width, desc.Height, snapshot.total_stats.drawcalls, snapshot.total_stats.vertices, (msaa ? " MSAA" : ""));
 
-		if (_state_tracking.preserve_depth_buffers && ds_surface == _state_tracking.current_depth_surface())
+		if (_state_tracking.preserve_depth_buffers && ds_surface == _state_tracking.current_depth_surface() && !_state_tracking.brute_force_fix)
 		{
 			for (UINT clear_index = 1; clear_index <= snapshot.clears.size(); ++clear_index)
 			{
