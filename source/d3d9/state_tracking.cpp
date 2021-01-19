@@ -93,10 +93,21 @@ void reshade::d3d9::state_tracking::on_draw(D3DPRIMITIVETYPE type, UINT vertices
 
 	if (preserve_depth_buffers)
 	{
+		D3DSURFACE_DESC descV, descD;
 		counters.current_stats.vertices += vertices;
 		counters.current_stats.drawcalls += 1;
 		_device->GetViewport(&counters.current_stats.viewport);
-	
+
+		//stores it in desc
+		descV.Width = counters.current_stats.viewport.Width;
+		descV.Height = counters.current_stats.viewport.Width;
+		descV.MultiSampleType = D3DMULTISAMPLE_NONE;
+
+		depthstencil->GetDesc(&descD);
+
+		is_good_viewport = (descV.Width >= floor(descD.Width * 0.95) && descV.Width <= ceil(descD.Width * 1.05)) && (descV.Height >= floor(descD.Height * 0.95) && descV.Height <= ceil(descD.Height * 1.05));
+		
+		//LOG(INFO) << "is_good_viewport -> " << is_good_viewport;
 	}
 #endif
 }
@@ -308,15 +319,13 @@ void reshade::d3d9::state_tracking::weapon_or_cockpit_fix(D3DPRIMITIVETYPE Primi
 {
 
 	if (brute_force_fix &&
-		is_best_original_depthstencil_source &&		
-		is_good_viewport &&
-		_counters_per_used_depth_surface.size() > depthstencil_clear_index - 1)
+		is_good_viewport)
 	{
+
+		LOG(INFO) << "Entered weapon_or_cockpit_fix";
 		D3DVIEWPORT9 mViewport; // Holds viewport data
 		_device->GetViewport(&mViewport); // retrieve current viewport
 
-		//if (find_best_depth_surface(mViewport.Height, mViewport.Width) == nullptr)
-		//	return;
 
 		// Viewport work around (help resolving z-fighting issues)
 		create_fixed_viewport(mViewport);
@@ -373,11 +382,8 @@ com_ptr<IDirect3DSurface9> reshade::d3d9::state_tracking::find_best_depth_surfac
 			if (desc.MultiSampleType != D3DMULTISAMPLE_NONE)
 				continue; // MSAA depth buffers are not supported since they would have to be moved into a plain surface before attaching to a shader slot
 
-			is_good_viewport = use_aspect_ratio_heuristics && check_aspect_ratio(desc.Width, desc.Height, width, height);
-			LOG(INFO) << "is_good_viewport -> " << is_good_viewport;
-
-			if (!is_good_viewport)
-				continue; // Not a good fit
+			if (use_aspect_ratio_heuristics && !check_aspect_ratio(desc.Width, desc.Height, width, height))
+				continue; // Not a good fit 
 
 			const auto curr_weight = snapshot.total_stats.vertices * (1.2f - static_cast<float>(snapshot.total_stats.drawcalls) / _stats.drawcalls);
 			const auto best_weight = best_snapshot.total_stats.vertices * (1.2f - static_cast<float>(best_snapshot.total_stats.drawcalls) / _stats.vertices);
