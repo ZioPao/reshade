@@ -1494,6 +1494,8 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 
 		if (_state_tracking.preserve_depth_buffers && dsv_texture == _state_tracking.depthstencil_clear_index.first)
 		{
+			//Saves the amount of depth buffers, to be used when switching to the next one
+			depth_buffers_size = snapshot.clears.size();
 			for (UINT clear_index = 1; clear_index <= snapshot.clears.size(); ++clear_index)
 			{
 				sprintf_s(label, "%s  CLEAR %2u", (clear_index == _state_tracking.depthstencil_clear_index.second ? "> " : "  "), clear_index);
@@ -1519,8 +1521,7 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 			ImGui::PopItemFlag();
 		}
 
-		//Saves tge amount of depth buffers, to be used when switching to the next one
-		depth_buffers_size = snapshot.clears.size();
+
 
 	}
 
@@ -1594,19 +1595,29 @@ void reshade::d3d11::runtime_d3d11::switch_depth_buffer() {
 
 	if (runtime::get_next_depth_buffer()) {
 
-		LOG(INFO) << "Switch to next depth buffer " << _state_tracking.depthstencil_clear_index.second
-					<< "--->" << _state_tracking.depthstencil_clear_index.second + 1;
-
-		if (_state_tracking.depthstencil_clear_index.second < depth_buffers_size)
+		if (_state_tracking.depthstencil_clear_index.second < depth_buffers_size) {
+			LOG(INFO) << "Switch to next depth buffer " << _state_tracking.depthstencil_clear_index.second
+				<< "--->" << _state_tracking.depthstencil_clear_index.second + 1;
 			_state_tracking.depthstencil_clear_index.second += 1;
+		}
+		else
+			LOG(INFO) << "Couldn't switch to next buffer, current max is" << depth_buffers_size;
+
 		runtime::set_next_depth_buffer(false);
+
 	}
 
 	if (runtime::get_prev_depth_buffer()) {
-		LOG(INFO) << "Switch to previous depth buffer " << _state_tracking.depthstencil_clear_index.second << "--->" << _state_tracking.depthstencil_clear_index.second - 1;
-
-		if (_state_tracking.depthstencil_clear_index.second > 0)
+		
+		if (_state_tracking.depthstencil_clear_index.second > 0) {
+			LOG(INFO) << "Switch to previous depth buffer " << _state_tracking.depthstencil_clear_index.second
+				<< "--->" << _state_tracking.depthstencil_clear_index.second - 1;
 			_state_tracking.depthstencil_clear_index.second -= 1;
+
+		}
+		else
+			LOG(INFO) << "Couldn't switch to previous buffer, we're at CLEAR 0";
+
 		runtime::set_prev_depth_buffer(false);
 
 	}
