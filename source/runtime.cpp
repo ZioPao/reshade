@@ -179,6 +179,14 @@ void reshade::runtime::on_present()
 		if (_input->is_key_pressed(_screenshot_key_data, _force_shortcut_modifiers))
 			_should_save_screenshot = true; // Notify 'update_and_render_effects' that we want to save a screenshot next frame
 
+		//Switch depth
+		if (_input->is_key_pressed(_next_depth_buffer_key_data, _force_shortcut_modifiers)) {
+			set_next_depth_buffer(true);
+		}
+
+		if (_input->is_key_pressed(_prev_depth_buffer_key_data, _force_shortcut_modifiers)) {
+			set_prev_depth_buffer(true);
+		}
 		// Do not allow the next shortcuts while effects are being loaded or compiled (since they affect that state)
 		if (!is_loading() && _reload_compile_queue.empty())
 		{
@@ -1417,6 +1425,8 @@ void reshade::runtime::load_config()
 	config.get("INPUT", "KeyPreviousPreset", _prev_preset_key_data);
 	config.get("INPUT", "KeyReload", _reload_key_data);
 	config.get("INPUT", "KeyScreenshot", _screenshot_key_data);
+	config.get("INPUT", "NextDepthBuffer", _next_depth_buffer_key_data);
+	config.get("INPUT", "PrevDepthBuffer", _prev_depth_buffer_key_data);
 
 	config.get("GENERAL", "NoDebugInfo", _no_debug_info);
 	config.get("GENERAL", "NoEffectCache", _no_effect_cache);
@@ -1467,6 +1477,8 @@ void reshade::runtime::save_config() const
 	config.set("INPUT", "KeyPreviousPreset", _prev_preset_key_data);
 	config.set("INPUT", "KeyReload", _reload_key_data);
 	config.set("INPUT", "KeyScreenshot", _screenshot_key_data);
+	config.set("INPUT", "NextDepthBuffer", _next_depth_buffer_key_data);
+	config.set("INPUT", "PrevDepthBuffer", _prev_depth_buffer_key_data);
 
 	config.set("GENERAL", "NoDebugInfo", _no_debug_info);
 	config.set("GENERAL", "NoEffectCache", _no_effect_cache);

@@ -296,8 +296,8 @@ void reshade::d3d11::runtime_d3d11::on_present()
 	update_depth_texture_bindings(_has_high_network_activity ? nullptr :
 		_state_tracking.find_best_depth_texture(_width, _height, _depth_texture_override));
 
-
-	switch_depth_buffer(_state_tracking);
+	//Switch the depth buffer when key is pressed
+	switch_depth_buffer();
 #endif
 
 	_app_state.capture(_immediate_context.get());
@@ -1586,25 +1586,28 @@ void reshade::d3d11::runtime_d3d11::update_depth_texture_bindings(com_ptr<ID3D11
 	}
 }
 
-void reshade::d3d11::runtime_d3d11::switch_depth_buffer(state_tracking_context &tracker) {
-	//Switch depth
+void reshade::d3d11::runtime_d3d11::switch_depth_buffer() {
+
 	if (runtime::get_next_depth_buffer()) {
 
-		LOG(INFO) << "Switch to next depth buffer " << tracker.depthstencil_clear_index.second << "--->" << tracker.depthstencil_clear_index.second + 1;
+		LOG(INFO) << "Switch to next depth buffer " << _state_tracking.depthstencil_clear_index.second << "--->" << _state_tracking.depthstencil_clear_index.second + 1;
 
-		if (tracker.depthstencil_clear_index.second < depth_buffers_size)
-			tracker.depthstencil_clear_index.second += 1;
+		if (_state_tracking.depthstencil_clear_index.second < depth_buffers_size)
+			_state_tracking.depthstencil_clear_index.second += 1;
 		runtime::set_next_depth_buffer(false);
 	}
 
 	if (runtime::get_prev_depth_buffer()) {
-		LOG(INFO) << "Switch to previous depth buffer " << tracker.depthstencil_clear_index.second << "--->" << tracker.depthstencil_clear_index.second - 1;
+		LOG(INFO) << "Switch to previous depth buffer " << _state_tracking.depthstencil_clear_index.second << "--->" << _state_tracking.depthstencil_clear_index.second - 1;
 
-		if (tracker.depthstencil_clear_index.second > 0)
-			tracker.depthstencil_clear_index.second -= 1;
+		if (_state_tracking.depthstencil_clear_index.second > 0)
+			_state_tracking.depthstencil_clear_index.second -= 1;
 		runtime::set_prev_depth_buffer(false);
 
 	}
+	LOG(INFO) << "Nothing to do";
+
+
 }
 
 #endif
