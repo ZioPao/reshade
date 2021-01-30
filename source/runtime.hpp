@@ -135,6 +135,13 @@ namespace reshade
 		/// <param name="function">The callback function.</param>
 		void subscribe_to_save_config(std::function<void(ini_file &)> function);
 
+		///Depth switching methods (ew)
+		bool get_next_depth_buffer();
+		bool get_prev_depth_buffer();
+
+		void set_next_depth_buffer(bool value);
+		void set_prev_depth_buffer(bool value);
+
 	protected:
 		runtime();
 		virtual ~runtime();
@@ -364,6 +371,12 @@ namespace reshade
 		unsigned int _preset_transition_delay = 1000;
 		std::filesystem::path _current_preset_path;
 		std::chrono::high_resolution_clock::time_point _last_preset_switching_time;
+
+		// === Depth buffer switching ===
+		bool _set_next_depth_buffer = false;
+		bool _set_prev_depth_buffer = false;
+		unsigned int _next_depth_buffer_key_data[4];
+		unsigned int _prev_depth_buffer_key_data[4];
 
 #if RESHADE_GUI
 		struct editor_instance

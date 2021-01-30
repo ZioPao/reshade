@@ -84,6 +84,10 @@ namespace reshade::d3d11
 #if RESHADE_DEPTH
 		void draw_depth_debug_menu();
 		void update_depth_texture_bindings(com_ptr<ID3D11Texture2D> texture);
+		void switch_depth_buffer(state_tracking_context &tracker);
+
+		UINT depth_buffers_size = 0;
+
 
 		com_ptr<ID3D11Texture2D> _depth_texture;
 		com_ptr<ID3D11ShaderResourceView> _depth_texture_srv;
