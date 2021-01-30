@@ -54,8 +54,7 @@ namespace reshade::d3d11
 extern bool is_windows7();
 
 reshade::d3d11::runtime_d3d11::runtime_d3d11(ID3D11Device *device, IDXGISwapChain *swapchain, state_tracking_context *state_tracking) :
-	_app_state(device), _state_tracking(*state_tracking), _device(device), _swapchain(swapchain)
-{
+	_app_state(device), _state_tracking(*state_tracking), _device(device), _swapchain(swapchain){
 	assert(device != nullptr && swapchain != nullptr && state_tracking != nullptr);
 
 	_device->GetImmediateContext(&_immediate_context);
@@ -298,8 +297,7 @@ void reshade::d3d11::runtime_d3d11::on_present()
 		_state_tracking.find_best_depth_texture(_width, _height, _depth_texture_override));
 
 
-	switch_depth_buffer(*_buffer_detection);
-
+	switch_depth_buffer(_state_tracking);
 #endif
 
 	_app_state.capture(_immediate_context.get());
@@ -1520,9 +1518,6 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 			ImGui::PopStyleColor();
 			ImGui::PopItemFlag();
 		}
-
-		// Saves the amount of depth buffers
-		depth_buffers_size = snapshot.clears.size();
 	}
 
 	ImGui::Spacing();
@@ -1611,4 +1606,5 @@ void reshade::d3d11::runtime_d3d11::switch_depth_buffer(state_tracking_context &
 
 	}
 }
+
 #endif
