@@ -327,5 +327,38 @@ com_ptr<ID3D11Texture2D> reshade::d3d11::state_tracking_context::find_best_depth
 
 	return best_match;
 }
+
+void reshade::d3d11::state_tracking_context::find_best_cleared_buffer(ID3D11Texture2D *_depth_texture_override) {
+
+	auto sorted_buffers = sorted_counters_per_used_depthstencil();
+
+	for (const auto &[dsv_texture, snapshot] : sorted_buffers)
+	{
+		D3D11_TEXTURE2D_DESC desc;
+		dsv_texture->GetDesc(&desc);
+
+		_depth_texture_override = (_depth_texture_override == dsv_texture) ? dsv_texture : nullptr;
+
+		if (preserve_depth_buffers && dsv_texture == depthstencil_clear_index.first)
+		{
+			//Saves the amount of depth buffers, to be used when switching to the next one
+			//depth_buffers_size = snapshot.clears.size()
+
+			UINT best_clear_index = -1;
+			UINT max_vertices = 0;
+			for (UINT clear_index = 1; clear_index <= snapshot.clears.size(); ++clear_index){
+				if (snapshot.clears[clear_index-1].vertices > max_vertices) {
+					max_vertices = snapshot.clears[clear_index-1].vertices;
+					best_clear_index = clear_index;
+				}
+			}
+			//LOG(INFO) << "Selected CLEAR with index " << best_clear_index << " and " << max_vertices << " vertices.";
+			depthstencil_clear_index.second = best_clear_index;
+			return;
+		}
+	}
+
+}
+
 #endif
 

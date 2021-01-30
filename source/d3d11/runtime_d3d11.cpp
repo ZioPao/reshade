@@ -298,6 +298,11 @@ void reshade::d3d11::runtime_d3d11::on_present()
 
 	//Switch the depth buffer when key is pressed
 	switch_depth_buffer();
+
+
+	if (_state_tracking.auto_choose_cleared_buffer) {
+		_state_tracking.find_best_cleared_buffer(_depth_texture_override);
+	}
 #endif
 
 	_app_state.capture(_immediate_context.get());
@@ -1460,6 +1465,10 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 	modified |= ImGui::Checkbox("Use aspect ratio heuristics", &_state_tracking.use_aspect_ratio_heuristics);
 	modified |= ImGui::Checkbox("Copy depth buffer before clear operations", &_state_tracking.preserve_depth_buffers);
 
+	if (_state_tracking.preserve_depth_buffers) {
+		modified |= ImGui::Checkbox("Auto choose cleared depth buffer", &_state_tracking.auto_choose_cleared_buffer);
+
+	}
 	if (modified) // Detection settings have changed, reset heuristic
 		_state_tracking.reset(true);
 
