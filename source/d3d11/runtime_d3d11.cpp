@@ -1518,6 +1518,10 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 			ImGui::PopStyleColor();
 			ImGui::PopItemFlag();
 		}
+
+		//Saves tge amount of depth buffers, to be used when switching to the next one
+		depth_buffers_size = snapshot.clears.size();
+
 	}
 
 	ImGui::Spacing();
@@ -1590,7 +1594,8 @@ void reshade::d3d11::runtime_d3d11::switch_depth_buffer() {
 
 	if (runtime::get_next_depth_buffer()) {
 
-		LOG(INFO) << "Switch to next depth buffer " << _state_tracking.depthstencil_clear_index.second << "--->" << _state_tracking.depthstencil_clear_index.second + 1;
+		LOG(INFO) << "Switch to next depth buffer " << _state_tracking.depthstencil_clear_index.second
+					<< "--->" << _state_tracking.depthstencil_clear_index.second + 1;
 
 		if (_state_tracking.depthstencil_clear_index.second < depth_buffers_size)
 			_state_tracking.depthstencil_clear_index.second += 1;
@@ -1605,8 +1610,6 @@ void reshade::d3d11::runtime_d3d11::switch_depth_buffer() {
 		runtime::set_prev_depth_buffer(false);
 
 	}
-	LOG(INFO) << "Nothing to do";
-
 
 }
 
