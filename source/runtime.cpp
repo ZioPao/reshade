@@ -1775,6 +1775,29 @@ bool reshade::runtime::switch_to_next_preset(std::filesystem::path filter_path, 
 	return true;
 }
 
+
+bool reshade::runtime::get_next_depth_buffer()
+{
+	return _set_next_depth_buffer;
+}
+
+bool reshade::runtime::get_prev_depth_buffer()
+{
+	return _set_prev_depth_buffer;
+}
+
+void reshade::runtime::set_next_depth_buffer(bool value)
+{
+	_set_next_depth_buffer = value;
+
+}
+
+void reshade::runtime::set_prev_depth_buffer(bool value)
+{
+	_set_prev_depth_buffer = value;
+
+}
+
 void reshade::runtime::save_screenshot(const std::wstring &postfix, const bool should_save_preset)
 {
 	char timestamp[21];

@@ -1314,6 +1314,9 @@ void reshade::runtime::draw_gui_settings()
 		modified |= widgets::key_input_box("Effect toggle key", _effects_key_data, *_input);
 		modified |= widgets::key_input_box("Effect reload key", _reload_key_data, *_input);
 
+		modified |= widgets::key_input_box("Switch to next depth buffer key", _next_depth_buffer_key_data, *_input);
+		modified |= widgets::key_input_box("Switch to previous depth buffer key", _prev_depth_buffer_key_data, *_input);
+
 		modified |= widgets::key_input_box("Performance mode toggle key", _performance_mode_key_data, *_input);
 
 		const float inner_spacing = ImGui::GetStyle().ItemInnerSpacing.x;

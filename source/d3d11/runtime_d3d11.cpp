@@ -296,6 +296,10 @@ void reshade::d3d11::runtime_d3d11::on_present()
 #if RESHADE_DEPTH
 	update_depth_texture_bindings(_has_high_network_activity ? nullptr :
 		_state_tracking.find_best_depth_texture(_width, _height, _depth_texture_override));
+
+
+	switch_depth_buffer(*_buffer_detection);
+
 #endif
 
 	_app_state.capture(_immediate_context.get());

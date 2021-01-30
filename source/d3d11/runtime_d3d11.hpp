@@ -87,6 +87,7 @@ namespace reshade::d3d11
 		void switch_depth_buffer(state_tracking_context &tracker);
 
 		UINT depth_buffers_size = 0;
+		state_tracking_context *const _buffer_detection;
 
 
 		com_ptr<ID3D11Texture2D> _depth_texture;
