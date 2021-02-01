@@ -65,7 +65,7 @@ namespace reshade::d3d11
 		bool preserve_depth_buffers = false;
 		bool use_aspect_ratio_heuristics = true;
 		bool auto_choose_cleared_buffer = false;
-
+		int min_vertices = 0;
 		std::pair<ID3D11Texture2D *, UINT> depthstencil_clear_index = { nullptr, 0 };
 
 		const auto &depth_buffer_counters() const { return _counters_per_used_depth_texture; }

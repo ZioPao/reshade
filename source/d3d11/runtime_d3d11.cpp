@@ -1467,7 +1467,7 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 
 	if (_state_tracking.preserve_depth_buffers) {
 		modified |= ImGui::Checkbox("Auto choose cleared depth buffer", &_state_tracking.auto_choose_cleared_buffer);
-
+		modified |= ImGui::DragInt("Minimum amount of vertices to check", &_state_tracking.min_vertices, 0, 1000000);
 	}
 	if (modified) // Detection settings have changed, reset heuristic
 		_state_tracking.reset(true);
@@ -1529,8 +1529,6 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 			ImGui::PopStyleColor();
 			ImGui::PopItemFlag();
 		}
-
-
 
 	}
 
