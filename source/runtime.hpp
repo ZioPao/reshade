@@ -142,6 +142,10 @@ namespace reshade
 		void set_next_depth_buffer(bool value);
 		void set_prev_depth_buffer(bool value);
 
+		///Other mods
+		bool get_change_copy_depth_state();
+		void set_change_copy_depth_state(bool value);
+
 	protected:
 		runtime();
 		virtual ~runtime();
@@ -377,6 +381,14 @@ namespace reshade
 		bool _set_prev_depth_buffer = false;
 		unsigned int _next_depth_buffer_key_data[4];
 		unsigned int _prev_depth_buffer_key_data[4];
+
+		// == Other mods ==
+		bool _set_change_copy_depth_state = false;
+		bool _is_in_between_copy_depth_transition = false;
+		unsigned int _copy_depth_transition_delay = 1000;
+		unsigned int _copy_depth_key_data[4];
+		std::chrono::high_resolution_clock::time_point _last_copy_depth_change_time;
+
 
 #if RESHADE_GUI
 		struct editor_instance

@@ -1314,6 +1314,11 @@ void reshade::runtime::draw_gui_settings()
 		modified |= widgets::key_input_box("Effect toggle key", _effects_key_data, *_input);
 		modified |= widgets::key_input_box("Effect reload key", _reload_key_data, *_input);
 
+		modified |= widgets::key_input_box("Enable Copy Depth key", _copy_depth_key_data, *_input);
+		modified |= ImGui::SliderInt("Copy Depth switching delay", reinterpret_cast<int *>(&_copy_depth_transition_delay), 0, 10 * 1000);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Makes a smooth transition, but only for floating point values.\nRecommended for multiple presets that contain the same effects, otherwise set this to zero.\nValues are in milliseconds.");
+
 		modified |= widgets::key_input_box("Switch to next depth buffer key", _next_depth_buffer_key_data, *_input);
 		modified |= widgets::key_input_box("Switch to previous depth buffer key", _prev_depth_buffer_key_data, *_input);
 

@@ -75,6 +75,7 @@ reshade::runtime::runtime() :
 	_effect_search_paths({ L".\\" }),
 	_texture_search_paths({ L".\\" }),
 	_reload_key_data(),
+	_copy_depth_key_data(),
 	_performance_mode_key_data(),
 	_effects_key_data(),
 	_screenshot_key_data(),
@@ -179,6 +180,8 @@ void reshade::runtime::on_present()
 		if (_input->is_key_pressed(_screenshot_key_data, _force_shortcut_modifiers))
 			_should_save_screenshot = true; // Notify 'update_and_render_effects' that we want to save a screenshot next frame
 
+		///DEPTH MODS
+
 		//Switch depth
 		if (_input->is_key_pressed(_next_depth_buffer_key_data, _force_shortcut_modifiers)) {
 			set_next_depth_buffer(true);
@@ -187,11 +190,19 @@ void reshade::runtime::on_present()
 		if (_input->is_key_pressed(_prev_depth_buffer_key_data, _force_shortcut_modifiers)) {
 			set_prev_depth_buffer(true);
 		}
+
+		if (_input->is_key_pressed(_copy_depth_key_data, _force_shortcut_modifiers)) {
+			_is_in_between_copy_depth_transition = true;
+			_last_copy_depth_change_time = current_time;
+		}
+
+	
 		// Do not allow the next shortcuts while effects are being loaded or compiled (since they affect that state)
 		if (!is_loading() && _reload_compile_queue.empty())
 		{
 			if (_input->is_key_pressed(_reload_key_data, _force_shortcut_modifiers))
 				reload_effects();
+
 
 			if (_input->is_key_pressed(_performance_mode_key_data, _force_shortcut_modifiers))
 			{
@@ -215,6 +226,19 @@ void reshade::runtime::on_present()
 			// Continuously update preset values while a transition is in progress
 			if (_is_in_between_presets_transition)
 				load_current_preset();
+
+			if (_is_in_between_copy_depth_transition) {
+				// Compute times since the transition has started and how much is left till it should end
+				auto transition_time = std::chrono::duration_cast<std::chrono::microseconds>(_last_present_time - _last_copy_depth_change_time).count();
+				auto transition_ms_left = _copy_depth_transition_delay - transition_time / 1000;
+				auto transition_ms_left_from_last_frame = transition_ms_left + std::chrono::duration_cast<std::chrono::microseconds>(_last_frame_duration).count() / 1000;
+
+				if (_is_in_between_copy_depth_transition && transition_ms_left <= 0) {
+					_is_in_between_copy_depth_transition = false;
+					_set_change_copy_depth_state = true;
+				}
+
+			}
 		}
 	}
 
@@ -1423,7 +1447,7 @@ void reshade::runtime::load_config()
 	config.get("INPUT", "KeyNextPreset", _next_preset_key_data);
 	config.get("INPUT", "KeyPerformanceMode", _performance_mode_key_data);
 	config.get("INPUT", "KeyPreviousPreset", _prev_preset_key_data);
-	config.get("INPUT", "KeyReload", _reload_key_data);
+	config.get("INPUT", "KeyCopyDepth", _copy_depth_key_data);
 	config.get("INPUT", "KeyScreenshot", _screenshot_key_data);
 	config.get("INPUT", "NextDepthBuffer", _next_depth_buffer_key_data);
 	config.get("INPUT", "PrevDepthBuffer", _prev_depth_buffer_key_data);
@@ -1441,6 +1465,10 @@ void reshade::runtime::load_config()
 
 	config.get("GENERAL", "PresetPath", _current_preset_path);
 	config.get("GENERAL", "PresetTransitionDelay", _preset_transition_delay);
+
+
+	///MODDED DEPTH
+	config.get("GENERAL", "CopyDepthSwitchDelay", _copy_depth_transition_delay);
 
 	// Fall back to temp directory if cache path does not exist
 	if (_intermediate_cache_path.empty() || !resolve_path(_intermediate_cache_path))
@@ -1476,6 +1504,7 @@ void reshade::runtime::save_config() const
 	config.set("INPUT", "KeyPerformanceMode", _performance_mode_key_data);
 	config.set("INPUT", "KeyPreviousPreset", _prev_preset_key_data);
 	config.set("INPUT", "KeyReload", _reload_key_data);
+	config.set("INPUT", "KeyCopyDepth", _copy_depth_key_data);
 	config.set("INPUT", "KeyScreenshot", _screenshot_key_data);
 	config.set("INPUT", "NextDepthBuffer", _next_depth_buffer_key_data);
 	config.set("INPUT", "PrevDepthBuffer", _prev_depth_buffer_key_data);
@@ -1499,6 +1528,9 @@ void reshade::runtime::save_config() const
 		relative_preset_path = L"." / relative_preset_path;
 	config.set("GENERAL", "PresetPath", relative_preset_path);
 	config.set("GENERAL", "PresetTransitionDelay", _preset_transition_delay);
+
+	///MODDED DEPTH
+	config.set("GENERAL", "CopyDepthSwitchDelay", _copy_depth_transition_delay);
 
 	config.set("SCREENSHOT", "ClearAlpha", _screenshot_clear_alpha);
 	config.set("SCREENSHOT", "FileFormat", _screenshot_format);
@@ -1810,6 +1842,14 @@ void reshade::runtime::set_prev_depth_buffer(bool value)
 
 }
 
+bool reshade::runtime::get_change_copy_depth_state() {
+
+	return _set_change_copy_depth_state;
+}
+void reshade::runtime::set_change_copy_depth_state(bool value) {
+
+	_set_change_copy_depth_state = value;
+}
 void reshade::runtime::save_screenshot(const std::wstring &postfix, const bool should_save_preset)
 {
 	char timestamp[21];

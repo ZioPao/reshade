@@ -296,8 +296,11 @@ void reshade::d3d11::runtime_d3d11::on_present()
 	update_depth_texture_bindings(_has_high_network_activity ? nullptr :
 		_state_tracking.find_best_depth_texture(_width, _height, _depth_texture_override));
 
+
+	/// DEPTH MODS
 	//Switch the depth buffer when key is pressed
 	switch_depth_buffer();
+	change_state_copy_depth();
 
 
 	if (_state_tracking.auto_choose_cleared_buffer) {
@@ -1631,4 +1634,12 @@ void reshade::d3d11::runtime_d3d11::switch_depth_buffer() {
 
 }
 
+void reshade::d3d11::runtime_d3d11::change_state_copy_depth() {
+
+	if (runtime::get_change_copy_depth_state()) {
+		LOG(INFO) << "Inside change_state";
+		_state_tracking.preserve_depth_buffers = !_state_tracking.preserve_depth_buffers;
+		runtime::set_change_copy_depth_state(false);
+	}
+}
 #endif
