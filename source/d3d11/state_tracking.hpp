@@ -70,8 +70,8 @@ namespace reshade::d3d11
 		int min_vertices = 0;
 
 		bool auto_choose_not_cleared_buffer = false;
-		int check_width_depth = 0;
-		int check_height_depth = 0;
+		float check_width_depth = 0;
+		float check_height_depth = 0;
 		int amount_draw_calls = 0;
 		/////////////////////////////////////////////////////
 		std::pair<ID3D11Texture2D *, UINT> depthstencil_clear_index = { nullptr, 0 };
@@ -84,7 +84,7 @@ namespace reshade::d3d11
 
 		/// Modded stuff
 		void find_best_cleared_buffer(ID3D11Texture2D *_depth_texture_override);
-		void find_best_non_cleared_buffer(ID3D11Texture2D *_depth_texture_override);
+		com_ptr<ID3D11Texture2D> find_best_non_cleared_buffer(ID3D11Texture2D *_depth_texture_override);
 #endif
 
 	private:

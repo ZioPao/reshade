@@ -364,29 +364,53 @@ void reshade::d3d11::state_tracking_context::find_best_cleared_buffer(ID3D11Text
 
 }
 
-void reshade::d3d11::state_tracking_context::find_best_non_cleared_buffer(ID3D11Texture2D *_depth_texture_override) {
-	//cant be bothered right now
+com_ptr<ID3D11Texture2D> reshade::d3d11::state_tracking_context::find_best_non_cleared_buffer(ID3D11Texture2D *_depth_texture_override) {
+
+	depthstencil_info best_snapshot, tmp_best_snapshot;
+	bool is_viable_snapshot = false;
+	com_ptr<ID3D11Texture2D> best_match = std::move(_depth_texture_override);
+	//if (best_match != nullptr)
+	//{
+	//	best_snapshot = _counters_per_used_depth_texture[best_match];		//this'll probably break stuff, since this is gonna let it override every single time
+	//}
+	//else
+	//{
+	for (auto &[dsv_texture, snapshot] : _counters_per_used_depth_texture)
+	{
+		if (snapshot.total_stats.drawcalls == 0)
+			continue; // Skip unused
+
+		D3D11_TEXTURE2D_DESC desc;
+		dsv_texture->GetDesc(&desc);
+		assert((desc.BindFlags & D3D11_BIND_DEPTH_STENCIL) != 0);
+
+		if (desc.SampleDesc.Count > 1)
+			continue; // Ignore MSAA textures, since they would need to be resolved first
+
+		assert((desc.BindFlags & D3D11_BIND_SHADER_RESOURCE) != 0);
 
 
-	if (check_height_depth != 0) {
+		//probably could be skipped in some way
 
-		//should check height
+		if (check_width_depth != 0) 
+			is_viable_snapshot = (check_width_depth == desc.Width) ? true : false;
 
+		if (check_height_depth != 0)
+			is_viable_snapshot = (check_height_depth == desc.Height) ? true : false;
+
+		if (check_amount_draw_calls != 0)
+			is_viable_snapshot = (best_snapshot.total_stats.vertices > check_amount_draw_calls) ? true : false;
+		//todo vertices too
+
+		if (is_viable_snapshot) {
+			best_snapshot = snapshot;
+			best_match = dsv_texture;
+		}
+		
+	
 	}
+	return best_match;
 
-	if (check_width_depth != 0) {
-
-		//should check height
-
-	}
-
-
-	if (amount_draw_calls != 0) {
-		//should check draw calls
-	}
-
-
-	//todo vertexes too
 }
 #endif
 

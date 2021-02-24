@@ -306,6 +306,13 @@ void reshade::d3d11::runtime_d3d11::on_present()
 	if (_state_tracking.auto_choose_cleared_buffer) {
 		_state_tracking.find_best_cleared_buffer(_depth_texture_override);
 	}
+	else if (_state_tracking.auto_choose_not_cleared_buffer){
+
+		update_depth_texture_bindings(_state_tracking.find_best_non_cleared_buffer(_depth_texture_override));
+	}
+
+
+
 #endif
 
 	_app_state.capture(_immediate_context.get());
