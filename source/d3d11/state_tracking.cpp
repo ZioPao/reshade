@@ -364,5 +364,29 @@ void reshade::d3d11::state_tracking_context::find_best_cleared_buffer(ID3D11Text
 
 }
 
+void reshade::d3d11::state_tracking_context::find_best_non_cleared_buffer(ID3D11Texture2D *_depth_texture_override) {
+	//cant be bothered right now
+
+
+	if (check_height_depth != 0) {
+
+		//should check height
+
+	}
+
+	if (check_width_depth != 0) {
+
+		//should check height
+
+	}
+
+
+	if (amount_draw_calls != 0) {
+		//should check draw calls
+	}
+
+
+	//todo vertexes too
+}
 #endif
 

@@ -64,8 +64,16 @@ namespace reshade::d3d11
 		// Detection Settings
 		bool preserve_depth_buffers = false;
 		bool use_aspect_ratio_heuristics = true;
+
+		///MODS//////////////////////
 		bool auto_choose_cleared_buffer = false;
 		int min_vertices = 0;
+
+		bool auto_choose_not_cleared_buffer = false;
+		int check_width_depth = 0;
+		int check_height_depth = 0;
+		int amount_draw_calls = 0;
+		/////////////////////////////////////////////////////
 		std::pair<ID3D11Texture2D *, UINT> depthstencil_clear_index = { nullptr, 0 };
 
 		const auto &depth_buffer_counters() const { return _counters_per_used_depth_texture; }
@@ -73,7 +81,10 @@ namespace reshade::d3d11
 
 		com_ptr<ID3D11Texture2D> find_best_depth_texture(UINT width, UINT height,
 			com_ptr<ID3D11Texture2D> override = nullptr);
+
+		/// Modded stuff
 		void find_best_cleared_buffer(ID3D11Texture2D *_depth_texture_override);
+		void find_best_non_cleared_buffer(ID3D11Texture2D *_depth_texture_override);
 #endif
 
 	private:

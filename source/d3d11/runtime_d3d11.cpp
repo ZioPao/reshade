@@ -1466,11 +1466,23 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 
 	bool modified = false;
 	modified |= ImGui::Checkbox("Use aspect ratio heuristics", &_state_tracking.use_aspect_ratio_heuristics);
+
 	modified |= ImGui::Checkbox("Copy depth buffer before clear operations", &_state_tracking.preserve_depth_buffers);
+
+
 
 	if (_state_tracking.preserve_depth_buffers) {
 		modified |= ImGui::Checkbox("Auto choose cleared depth buffer", &_state_tracking.auto_choose_cleared_buffer);
 		modified |= ImGui::DragInt("Minimum amount of vertices to check", &_state_tracking.min_vertices, 0, 1000000);
+	}
+	else {
+		modified |= ImGui::Checkbox("Auto choose corrept non-cleared depth Buffer", &_state_tracking.auto_choose_not_cleared_buffer);	//change bool
+
+		//if 0, then ignore that check
+		modified |= ImGui::DragInt("Width", &_state_tracking.check_width_depth, 0, 1000000);
+		modified |= ImGui::DragInt("Height", &_state_tracking.check_height_depth, 0, 1000000);
+		modified |= ImGui::DragInt("Draw Calls", &_state_tracking.amount_draw_calls, 0, 1000000);
+
 	}
 	if (modified) // Detection settings have changed, reset heuristic
 		_state_tracking.reset(true);
