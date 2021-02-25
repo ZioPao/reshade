@@ -385,8 +385,8 @@ namespace reshade
 		// == Other mods ==
 		bool _set_change_copy_depth_state = false;
 		bool _is_in_between_copy_depth_transition = false;
-		unsigned int _copy_depth_transition_delay = 1000;
-		unsigned int _copy_depth_key_data[4];
+		unsigned int _copy_depth_transition_delay[2];			//Default should be 1000
+		unsigned int _copy_depth_key_data[2][4];
 		std::chrono::high_resolution_clock::time_point _last_copy_depth_change_time;
 
 

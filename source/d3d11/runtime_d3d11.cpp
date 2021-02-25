@@ -89,6 +89,13 @@ reshade::d3d11::runtime_d3d11::runtime_d3d11(ID3D11Device *device, IDXGISwapChai
 		config.get("DEPTH", "DepthCopyAtClearIndex", _state_tracking.depthstencil_clear_index.second);
 		config.get("DEPTH", "UseAspectRatioHeuristics", _state_tracking.use_aspect_ratio_heuristics);
 
+		//Depth mod stuff
+		config.get("DEPTH", "AutoChooseClearedBuffer", _state_tracking.auto_choose_cleared_buffer);
+		config.get("DEPTH", "AutoChooseNotClearedBuffer", _state_tracking.auto_choose_not_cleared_buffer);
+		config.get("DEPTH", "MinAmountOfVertices", _state_tracking.check_min_vertices);
+		config.get("DEPTH", "ManualWidthCheck", _state_tracking.check_width_depth);
+		config.get("DEPTH", "ManualHeightCheck", _state_tracking.check_height_depth);
+
 		if (_state_tracking.depthstencil_clear_index.second == std::numeric_limits<UINT>::max())
 			_state_tracking.depthstencil_clear_index.second  = 0;
 	});
@@ -96,6 +103,13 @@ reshade::d3d11::runtime_d3d11::runtime_d3d11(ID3D11Device *device, IDXGISwapChai
 		config.set("DEPTH", "DepthCopyBeforeClears", _state_tracking.preserve_depth_buffers);
 		config.set("DEPTH", "DepthCopyAtClearIndex", _state_tracking.depthstencil_clear_index.second);
 		config.set("DEPTH", "UseAspectRatioHeuristics", _state_tracking.use_aspect_ratio_heuristics);
+
+		//Depth mod stuff
+		config.set("DEPTH", "AutoChooseClearedBuffer", _state_tracking.auto_choose_cleared_buffer);
+		config.set("DEPTH", "AutoChooseNotClearedBuffer", _state_tracking.auto_choose_not_cleared_buffer);
+		config.set("DEPTH", "MinAmountOfVertices", _state_tracking.check_min_vertices);
+		config.set("DEPTH", "ManualWidthCheck", _state_tracking.check_width_depth);
+		config.set("DEPTH", "ManualHeightCheck", _state_tracking.check_height_depth);
 	});
 #endif
 
@@ -307,7 +321,6 @@ void reshade::d3d11::runtime_d3d11::on_present()
 		_state_tracking.find_best_cleared_buffer(_depth_texture_override);
 	}
 	else if (_state_tracking.auto_choose_not_cleared_buffer){
-
 		update_depth_texture_bindings(_state_tracking.find_best_non_cleared_buffer(_depth_texture_override));
 	}
 
@@ -1479,16 +1492,18 @@ void reshade::d3d11::runtime_d3d11::draw_depth_debug_menu()
 
 
 	if (_state_tracking.preserve_depth_buffers) {
+		ImGui::Spacing();
 		modified |= ImGui::Checkbox("Auto choose cleared depth buffer", &_state_tracking.auto_choose_cleared_buffer);
-		modified |= ImGui::DragInt("Minimum amount of vertices to check", &_state_tracking.min_vertices, 0, 1000000);
+		modified |= ImGui::DragInt("Min. Vertices", &_state_tracking.check_min_vertices, 0, 1000000);
 	}
 	else {
+		ImGui::Spacing();
 		modified |= ImGui::Checkbox("Auto choose corrept non-cleared depth Buffer", &_state_tracking.auto_choose_not_cleared_buffer);	//change bool
 
 		//if 0, then ignore that check
 		modified |= ImGui::DragInt("Width", &_state_tracking.check_width_depth, 0, 1000000);
 		modified |= ImGui::DragInt("Height", &_state_tracking.check_height_depth, 0, 1000000);
-		modified |= ImGui::DragInt("Draw Calls", &_state_tracking.amount_draw_calls, 0, 1000000);
+		modified |= ImGui::DragInt("Min. Vertices", &_state_tracking.check_min_vertices, 0, 1000000);
 
 	}
 	if (modified) // Detection settings have changed, reset heuristic

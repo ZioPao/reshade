@@ -191,12 +191,18 @@ void reshade::runtime::on_present()
 			set_prev_depth_buffer(true);
 		}
 
-		if (_input->is_key_pressed(_copy_depth_key_data, _force_shortcut_modifiers)) {
+
+		//will probably break something but tbh i dont care
+		if (_input->is_key_pressed(_copy_depth_key_data[0], _force_shortcut_modifiers)) {
 			_is_in_between_copy_depth_transition = true;
-			_last_copy_depth_change_time = current_time;
+			_last_copy_depth_change_time[0] = current_time;
 		}
 
-	
+		if (_input->is_key_pressed(_copy_depth_key_data[1], _force_shortcut_modifiers)) {
+			_is_in_between_copy_depth_transition = true;
+			_last_copy_depth_change_time[1] = current_time;
+		}
+
 		// Do not allow the next shortcuts while effects are being loaded or compiled (since they affect that state)
 		if (!is_loading() && _reload_compile_queue.empty())
 		{

@@ -67,12 +67,12 @@ namespace reshade::d3d11
 
 		///MODS//////////////////////
 		bool auto_choose_cleared_buffer = false;
-		int min_vertices = 0;
+		int check_min_vertices = 0;
 
 		bool auto_choose_not_cleared_buffer = false;
-		float check_width_depth = 0;
-		float check_height_depth = 0;
-		int amount_draw_calls = 0;
+		int check_width_depth = 0;
+		int check_height_depth = 0;
+		int check_amount_draw_calls = 0;
 		/////////////////////////////////////////////////////
 		std::pair<ID3D11Texture2D *, UINT> depthstencil_clear_index = { nullptr, 0 };
 

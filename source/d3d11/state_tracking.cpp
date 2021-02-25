@@ -348,7 +348,7 @@ void reshade::d3d11::state_tracking_context::find_best_cleared_buffer(ID3D11Text
 			UINT max_vertices = 0;
 			for (UINT clear_index = 1; clear_index <= snapshot.clears.size(); ++clear_index){
 
-				if (snapshot.clears[clear_index - 1].vertices < min_vertices)
+				if (snapshot.clears[clear_index - 1].vertices < check_min_vertices)
 					continue;
 
 				if (snapshot.clears[clear_index-1].vertices > max_vertices) {
@@ -398,9 +398,9 @@ com_ptr<ID3D11Texture2D> reshade::d3d11::state_tracking_context::find_best_non_c
 		if (check_height_depth != 0)
 			is_viable_snapshot = (check_height_depth == desc.Height) ? true : false;
 
-		if (check_amount_draw_calls != 0)
-			is_viable_snapshot = (best_snapshot.total_stats.vertices > check_amount_draw_calls) ? true : false;
-		//todo vertices too
+		//vertices are easier to check
+		if (check_min_vertices != 0)
+			is_viable_snapshot = (snapshot.total_stats.vertices > check_min_vertices) ? true : false;
 
 		if (is_viable_snapshot) {
 			best_snapshot = snapshot;
